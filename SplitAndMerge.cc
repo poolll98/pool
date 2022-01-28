@@ -60,10 +60,15 @@ void split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const u
       std::vector<unsigned int> clSplit (allocations.size()); #we could initialize the vector to LAbI
       clSplit[i]=LabI;
       clSplit[j]=allocations[j];
-      const unsigned int q=restricted_GS(cl,i,j,1);
+      unsigned int CountLabI=0;
+      unsigned int CountLabJ=0;
+      const double q=restricted_GS(cl,i,j,1);
       unsigned int z=0;
       for(auto i=0; i < clSplit.size(); i++){
           if((z<S.size())and(i==S[z])){
+            if(cl[z]==LabI) CountLabI++;
+            else CountLabJ++;
+            
             clSplit[i]=cl[z];
             z++;
                                       }
@@ -72,6 +77,9 @@ void split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const u
               }
                                             
                                             }
+      const double p1=1/q;
+      const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha;
+      
       
                                                                                               }
 
