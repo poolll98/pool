@@ -34,6 +34,8 @@ void SplitAndMergeAlgorithm::compute_S(const unsigned int i, const unsigned int 
     }
 }
 
+
+
 std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigned int i, const unsigned int j){
     if (allocations[i]==allocations[j]) {
         LabI = *max_element(allocations.begin(), allocations.end()) + 1;
@@ -49,3 +51,39 @@ std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigne
     }
     return cl;
 }
+
+
+
+void split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const unsigned int j){
+    if(allocations[i]==allocations[j]) { 
+      LabI=*(std::max_element(allocations.begin(), allocations.end()));
+      std::vector<unsigned int> clSplit (allocations.size()); #we could initialize the vector to LAbI
+      clSplit[i]=LabI;
+      clSplit[j]=allocations[j];
+      const unsigned int q=restricted_GS(cl,i,j,1);
+      unsigned int z=0;
+      for(auto i=0; i < clSplit.size(); i++){
+          if((z<S.size())and(i==S[z])){
+            clSplit[i]=cl[z];
+            z++;
+                                      }
+          else{
+            clSPlit[i]=allocations[i];
+              }
+                                            
+                                            }
+      
+                                                                                              }
+
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
+      
