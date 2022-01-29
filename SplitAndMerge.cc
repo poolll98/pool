@@ -54,7 +54,7 @@ std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigne
 
 
 
-void split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const unsigned int j){
+void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const unsigned int j){
     if(allocations[i]==allocations[j]) { 
       LabI=*(std::max_element(allocations.begin(), allocations.end()));
       std::vector<unsigned int> clSplit (allocations.size()); #we could initialize the vector to LAbI
@@ -64,7 +64,7 @@ void split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const u
       unsigned int CountLabJ=0;
       const double q=restricted_GS(cl,i,j,1);
       unsigned int z=0;
-      for(auto i=0; i < clSplit.size(); i++){
+      for(unsigned int i=0; i < clSplit.size(); i++){
           if((z<S.size())and(i==S[z])){
             if(cl[z]==LabI) CountLabI++;
             else CountLabJ++;
@@ -82,8 +82,22 @@ void split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const u
       
       
                                                                                               }
-
-      
+bool accepted_proposal(const double acRa) const{
+    std::default_random_engine generator;
+    std::uniform_real_distribution UnifDis(0.0, 1.0);
+    return (UnifDis(generator)<=acRa);
+                                                }
+  # standard Gibbs Sampling
+void restricted_GS(std::vector<unsigned int>& cl, const unsigned int i, 
+                   const unsigned int j, double &res_prod){ #è stata messa _const non so perchè 
+  for(unsigned int i=0; i<S.size(); i++){
+    LabI=*(std::max_element(allocations.begin(), allocations.end())); #bisogna mettere LabI come _private
+    p_i = ComputeRestrGSProbabilities(cl, i, j, z, 'i');
+    p_j = ComputeRestrGSProbabilities(cl, i, j, z, 'j');
+    p   = p_i/(p_i+p_j);  
+    cl[i]= (accepted_proposal(p)) ? LabI : false;
+                                         }                                                        
+                                                           }
       
       
       
