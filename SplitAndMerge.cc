@@ -56,65 +56,140 @@ std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigne
 
 
 void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const unsigned int j){
-    const n=allocations.size() #number of total data
     if(allocations[i]==allocations[j]) { 
       LabI=*(std::max_element(allocations.begin(), allocations.end()));
-      std::vector<unsigned int> clSplit (n); #we could initialize the vector to LAbI
-      std::vector<float> data_i();  #support vector to contain data with label I, we will dinamically construct it and use it to compute conditional_pred_lpdf
-      std::vector<float> data_j();  #same for labJ
+      std::vector<unsigned int> clSplit (allocations.size()); #we could initialize the vector to LAbI
+      Eigen::MatrixXd data_i();  #support vector to contain data with label I, we will dinamically construct it and use it to compute conditional_pred_lpdf
+      Eigen::MatrixXd data_j();  #same for labJ
+      Eigen::MatrixXd data_J();
       double p_i=0; #accumulators for log probabilities
       double p_j=0;
+      double p_J=0;
       
-      data_i.reserve(n);
-      data_j.reserve(n);
       clSplit[i]=LabI;
       clSplit[j]=allocations[j];
       unsigned int CountLabI=0;
       unsigned int CountLabJ=0;
       const double q=restricted_GS(cl,i,j,1);
       unsigned int z=0;
+      unsigned int I=i;
       for(unsigned int i=0; i < clSplit.size(); i++){
           if((z<S.size())and(i==S[z])){
             if(cl[z]==LabI){
               CountLabI++;
-              if (!data_i.size()){ #first iteration
-                p_i+=self.__hierarchy.prior_pred_lpdf(X[S[z]]) #REVIEW: do this with actual function + #where are the data??
-              }
+              if (!data_i.rows()){ #first iteration
+                p_i+=prior_pred_lpdf(data.row(S[z])) #REVIEW: do this with actual function + #where are the data??
+                                 }
               else{
-                p_i+=self.__hierarchy.conditional_pred_lpdf(X[S[z]], data_i) #I imagine we pass a vector with past data to condition
-              }
-              data_i.push(X[S[z]]);  
-              
-            }
+                p_i+=conditional_pred_lpdf(data.row(S[z]), data_i) #I imagine we pass a vector with past data to condition
+                  }
+              data_i.conservativeResize(data_i.rows()+1,NoChange);
+              data_i.row(data_i.rows()-1)=data.row(i);              
+                          }
             else{
               CountLabJ++;
-              if (!data_j.size()){ #first iteration
-                p_j+=self.__hierarchy.prior_pred_lpdf(X[S[z]]) #REVIEW: do this with actual function + #where are the data??
-              }
+              if (!data_j.rows()){ #first iteration
+                p_j+=prior_pred_lpdf(data.row(S[z])) #REVIEW: do this with actual function + #where are the data??
+                                 }
               else{
-                p_j+=self.__hierarchy.conditional_pred_lpdf(X[S[z]], data_j) #I imagine we pass a vector with past data to condition
-              }
-              data_j.push(X[S[z]]);
-            }
+                p_j+=conditional_pred_lpdf(data.row(S[z]), data_j) #I imagine we pass a vector with past data to condition
+                  }
+              data_j.conservativeResize(data_j.rows()+1,NoChange);
+              data_j.row(data_j.rows()-1)=data.row(i)
+                 }
             
             clSplit[i]=cl[z];
             z++;
                                       }
           else{
+            if(i!=I and i!=j){
             clSPlit[i]=allocations[i];
+                             }
               }
+          if(allocations[i]==clSplit[j]){
+            if(!data_J.rows()){
+              p_J+=prior_pred_lpdf(data.row(i))
+                              }
+            else{
+              p_J+=conditional_pred_lpdf(data.row(i), data_J)
+                }
+            data_J.conservativeResize(data_J.rows()+1,NoChange);
+            data_J.row(data_J.rows()-1)=data.row(i)
+                                        }
                                             
                                               }
       const double p1=1/q;
       const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha;
-      const double p3=exp(p_i+p_j-P_i); #REVIEW: exp in cmath library
-      
-      AcRa=min(1,p1*p2*p3) #acceptance ratio 
-                res=accepted_proposal(AcRa)
-                if res:
-                    return clSplit
-                else:
-                    return self.__C  #REVIEW: allocations?
+      const double p3=std::exp(p_i+p_j-p_J); 
+      const double AcRa=min(1,p1*p2*p3) #acceptance ratio 
+      accepted_proposal(AcRa))? allocations=clSplit: true; 
+      }
+  else{
+    std::vector<unsigned int> clMerge (allocations.size()); #we could initialize the vector to LAbI
+    Eigen::MatrixXd data_i();  #support vector to contain data with label I, we will dinamically construct it and use it to compute conditional_pred_lpdf
+    Eigen::MatrixXd data_j();  #same for labJ
+    Eigen::MatrixXd data_J();
+    double p_i=0; #accumulators for log probabilities
+    double p_j=0;
+    double p_J=0;
+     
+    clMerge[i]=allocations[j];
+    clMerge[j]=allocations[j];
+    unsigned int CountLabI=0;
+    unsigned int CountLabJ=0;
+    unsigned int z=0;
+    unsigned int I=i;
+     for(unsigned int i=0; i < clMerge.size(); i++){
+          if((z<S.size())and(i==S[z])){
+            if(cl[z]==allocations[I]){
+              CountLabI++;
+              if (!data_i.rows()){ #first iteration
+                p_i+=prior_pred_lpdf(data.row(S[z])) #REVIEW: do this with actual function + #where are the data??
+                                 }
+              else{
+                p_i+=conditional_pred_lpdf(data.row(S[z]), data_i) #I imagine we pass a vector with past data to condition
+                  }
+              data_i.conservativeResize(data_i.rows()+1,NoChange);
+              data_i.row(data_i.rows()-1)=data.row(i);              
+                          }
+            else{
+              CountLabJ++;
+              if (!data_j.rows()){ #first iteration
+                p_j+=prior_pred_lpdf(data.row(S[z])) #REVIEW: do this with actual function + #where are the data??
+                                 }
+              else{
+                p_j+=conditional_pred_lpdf(data.row(S[z]), data_j) #I imagine we pass a vector with past data to condition
+                  }
+              data_j.conservativeResize(data_j.rows()+1,NoChange);
+              data_j.row(data_j.rows()-1)=data.row(i)
+                 }
+            
+            clMerge[i]=allocations[j];
+            z++;
+                                      }      
+          else{
+            if(i!=I and i!=j){
+            clMerge[i]=allocations[i];
+                             }
+              }
+          if(allocations[i]==clMerge[j]){
+            if(!data_J.rows()){
+              p_J+=prior_pred_lpdf(data.row(i))
+                              }
+            else{
+              p_J+=conditional_pred_lpdf(data.row(i), data_J)
+                }
+            data_J.conservativeResize(data_J.rows()+1,NoChange);
+            data_J.row(data_J.rows()-1)=data.row(i)
+                                        }
+                                            
+                                              }
+      q= 
+      const double p1=q;
+      const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha;
+      const double p3=std::exp(-p_i-p_j+p_J); 
+      const double AcRa=min(1,p1*p2*p3) #acceptance ratio 
+      accepted_proposal(AcRa))? allocations=clMerge: true; 
       }
     
 }
@@ -133,7 +208,7 @@ void restricted_GS(std::vector<unsigned int>& cl, const unsigned int i,
     p_i = ComputeRestrGSProbabilities(cl, i, j, z, 'i');
     p_j = ComputeRestrGSProbabilities(cl, i, j, z, 'j');
     p   = p_i/(p_i+p_j);  
-    cl[i]= (accepted_proposal(p)) ? LabI : false;
+    cl[i]= (accepted_proposal(p)) ? LabI : cl[i];
                                          }                                                        
                                                            }
       
