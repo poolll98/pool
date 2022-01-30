@@ -88,7 +88,7 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
             }
             else{
               CountLabJ++;
-              if (!data_i.size()){ #first iteration
+              if (!data_j.size()){ #first iteration
                 p_j+=self.__hierarchy.prior_pred_lpdf(X[S[z]]) #REVIEW: do this with actual function + #where are the data??
               }
               else{
