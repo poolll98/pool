@@ -70,7 +70,8 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
       clSplit[j]=allocations[j];
       unsigned int CountLabI=0;
       unsigned int CountLabJ=0;
-      const double q=restricted_GS(cl,i,j,1);
+      double q=1.0;
+      restricted_GS(cl,i,j,q);
       unsigned int z=0;
       unsigned int I=i;
       for(unsigned int i=0; i < clSplit.size(); i++){
@@ -122,7 +123,7 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
       const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha;
       const double p3=std::exp(p_i+p_j-p_J); 
       const double AcRa=min(1,p1*p2*p3) #acceptance ratio 
-      accepted_proposal(AcRa))? allocations=clSplit: true; 
+      if(accepted_proposal(AcRa)) allocations=clSplit;
       }
   else{
     std::vector<unsigned int> clMerge (allocations.size()); #we could initialize the vector to LAbI
@@ -184,25 +185,36 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
                                         }
                                             
                                               }
-      q= 
+      double q=1; 
+      #Fake Gibbs Sampling in order to compute the probability q
+      std::vector<unsigned int> cl_copy(cl);
+      for(unsigned int k=0; k<S.size(); k++){
+        double p_i=ComputeRestrGSProbabilities(cl_copy, i, j, k, cluster='i');
+        double p_j=ComputeRestrGSProbabilities(cl_copy, i, j, k, cluster='j');
+        double p=(p_i)/(p_i + p_j);
+        cl_copy[k]=allocations[S[k]];
+        if(cl_copy[k]==allocations[i]) q=q*p;
+        else q=q*(1-p);
+                                             }
+        
       const double p1=q;
       const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha;
       const double p3=std::exp(-p_i-p_j+p_J); 
       const double AcRa=min(1,p1*p2*p3) #acceptance ratio 
-      accepted_proposal(AcRa))? allocations=clMerge: true; 
+      if(accepted_proposal(AcRa)) allocations=clMerge;
       }
     
 }
   
   
-bool accepted_proposal(const double acRa) const{
+bool SplitAndMergeAlgorithm::accepted_proposal(const double acRa) const{
     std::default_random_engine generator;
     std::uniform_real_distribution UnifDis(0.0, 1.0);
     return (UnifDis(generator)<=acRa);
-                                                }
+                                                                        }
   # standard Gibbs Sampling
-void restricted_GS(std::vector<unsigned int>& cl, const unsigned int i, 
-                   const unsigned int j, double &res_prod){ #è stata messa _const non so perchè 
+void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const unsigned int i, 
+                   const unsigned int j){ #è stata messa _const non so perchè 
   for(unsigned int i=0; i<S.size(); i++){
     LabI=*(std::max_element(allocations.begin(), allocations.end())); #bisogna mettere LabI come _private
     p_i = ComputeRestrGSProbabilities(cl, i, j, z, 'i');
@@ -211,9 +223,51 @@ void restricted_GS(std::vector<unsigned int>& cl, const unsigned int i,
     cl[i]= (accepted_proposal(p)) ? LabI : cl[i];
                                          }                                                        
                                                            }
+# Modified Gibbs Sampling
+void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const unsigned int i, 
+                   const unsigned int j, double &res_prod){ #è stata messa _const non so perchè 
+  for(unsigned int i=0; i<S.size(); i++){
+    LabI=*(std::max_element(allocations.begin(), allocations.end())); #bisogna mettere LabI come _private
+    p_i = ComputeRestrGSProbabilities(cl, i, j, z, 'i');
+    p_j = ComputeRestrGSProbabilities(cl, i, j, z, 'j');
+    p   = p_i/(p_i+p_j);  
+    cl[i]= (accepted_proposal(p)) ? LabI : allocations[j];
+    if(cl[i]==LabI) res_prod=res_prod*p;
+    else res_prod=res_prod*(1-p);
+                                         }                                                        
+                                                           }
       
-      
-      
+ double SplitAndMergeAlgorithm::ComputeRestrGSProbabilities(std::vector<unsigned int>& cl,
+                    const unsigned int i, const unsigned int j, const unsigned int z,const char cluster='i') const{
+    if(cluster!='i' and cluster!='j'){
+      std::cerr<<"Unexpected value for the parameter cluster ";
+      return 0.0;
+                                      }
+    else{
+      unsigned int label=0;
+      if(cluster=='i')label=LabI;
+      else label=allocations[j];
+      std::vector<unsigned int> v;
+      v.reserve(cl.size());
+      for(unsigned int k=0; k<cl.size(); k++){
+        if(cl[k]==label && S[k]!=S[z]){
+          v.push_back(S[k]);
+                                      }
+                                              }
+      if(cluster=='i') v.push_back(i);
+      else v.push_back(j);
+      Eigen::MatrixXd ExtractedData;
+      ExtractedData=data(v,Eigen::all);
+      if(ExtractedData.rows()==0){
+        std::cerr<<"No data points in one of the two clusters considered for restricted Gibbs sampling."+
+                    "This is impossible, indeed there should always be at "+"least i or j in the datapoints.+
+                    "least i or j in the datapoints."<<std::endl;
+        return 0.0;
+                                    }
+      else return v.size()*std::exp(conditional_pred_lpdf(data(S[z],Eigen::all),ExtractedData));
+         }
+   
+ }
       
       
       
