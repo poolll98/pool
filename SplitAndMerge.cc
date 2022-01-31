@@ -214,7 +214,7 @@ bool SplitAndMergeAlgorithm::accepted_proposal(const double acRa) const{
                                                                         }
   # standard Gibbs Sampling
 void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const unsigned int i, 
-                   const unsigned int j){ #è stata messa _const non so perchè 
+                   const unsigned int j) const{ 
   for(unsigned int i=0; i<S.size(); i++){
     LabI=*(std::max_element(allocations.begin(), allocations.end())); #bisogna mettere LabI come _private
     p_i = ComputeRestrGSProbabilities(cl, i, j, z, 'i');
@@ -225,7 +225,7 @@ void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const 
                                                            }
 # Modified Gibbs Sampling
 void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const unsigned int i, 
-                   const unsigned int j, double &res_prod){ #è stata messa _const non so perchè 
+                   const unsigned int j, double &res_prod)const{ 
   for(unsigned int i=0; i<S.size(); i++){
     LabI=*(std::max_element(allocations.begin(), allocations.end())); #bisogna mettere LabI come _private
     p_i = ComputeRestrGSProbabilities(cl, i, j, z, 'i');
