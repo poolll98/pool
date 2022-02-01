@@ -68,7 +68,7 @@ std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigne
     return cl;
 }
 
-void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const unsigned int j){
+void SplitAndMergeAlgorithm::split_or_merge(std::vector<>& cl, const unsigned int i, const unsigned int j){
     if(allocations[i]==allocations[j]) { 
       std::vector<unsigned int> clSplit (allocations.size()); #we could initialize the vector to LAbI
       Eigen::MatrixXd data_i();  
