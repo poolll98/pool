@@ -4,6 +4,23 @@
 #include <random>
 #include <cmath>
 
+void SplitAndMergeAlgorithm::read_params_from_proto(
+  const bayesmix::AlgorithmParams &params){
+  BaseAlgorithm::read_params_from_proto(params);
+  T = params.splitmerge_n_restr_gs_updates();
+  K = params.splitmerge_n_mh_updates();
+  M = params.splitmerge_n_full_gs_updates();
+} 
+
+void SplitAndMergeAlgorithm::initialize(){
+  MarginalAlgorithm::initialize();
+
+  if(mixing->get_id()!=bayesmix::MixingId::DP){
+    throw std::invalid_argument(
+      "Invalid mixing supplied to Split and Merge, only DP mixing supported");
+  }
+}
+
 void SplitAndMergeAlgorithm::print_startup_message() const {
   std::string msg = "Running Split and Merge algorithm with " +
                     bayesmix::HierarchyId_Name(unique_values[0]->get_id()) +
@@ -35,8 +52,6 @@ void SplitAndMergeAlgorithm::compute_S(const unsigned int i, const unsigned int 
     }
 }
 
-
-
 std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigned int i, const unsigned int j){
     if (allocations[i]==allocations[j]) {
         LabI = *max_element(allocations.begin(), allocations.end()) + 1;
@@ -53,16 +68,13 @@ std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigne
     return cl;
 }
 
-
-
 void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const unsigned int i, const unsigned int j){
     if(allocations[i]==allocations[j]) { 
-      LabI=*(std::max_element(allocations.begin(), allocations.end()));
       std::vector<unsigned int> clSplit (allocations.size()); #we could initialize the vector to LAbI
-      Eigen::MatrixXd data_i();  #support vector to contain data with label I, we will dinamically construct it and use it to compute conditional_pred_lpdf
-      Eigen::MatrixXd data_j();  #same for labJ
+      Eigen::MatrixXd data_i();  
+      Eigen::MatrixXd data_j();  
       Eigen::MatrixXd data_J();
-      double p_i=0; #accumulators for log probabilities
+      double p_i=0; 
       double p_j=0;
       double p_J=0;
       
@@ -79,10 +91,10 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
             if(cl[z]==LabI){
               CountLabI++;
               if (!data_i.rows()){ #first iteration
-                p_i+=prior_pred_lpdf(data.row(S[z])) #REVIEW: do this with actual function + #where are the data??
+                p_i+=prior_pred_lpdf(data.row(S[z])) 
                                  }
               else{
-                p_i+=conditional_pred_lpdf(data.row(S[z]), data_i) #I imagine we pass a vector with past data to condition
+                p_i+=conditional_pred_lpdf(data.row(S[z]), data_i) 
                   }
               data_i.conservativeResize(data_i.rows()+1,NoChange);
               data_i.row(data_i.rows()-1)=data.row(i);              
@@ -90,10 +102,10 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
             else{
               CountLabJ++;
               if (!data_j.rows()){ #first iteration
-                p_j+=prior_pred_lpdf(data.row(S[z])) #REVIEW: do this with actual function + #where are the data??
+                p_j+=prior_pred_lpdf(data.row(S[z])) 
                                  }
               else{
-                p_j+=conditional_pred_lpdf(data.row(S[z]), data_j) #I imagine we pass a vector with past data to condition
+                p_j+=conditional_pred_lpdf(data.row(S[z]), data_j)
                   }
               data_j.conservativeResize(data_j.rows()+1,NoChange);
               data_j.row(data_j.rows()-1)=data.row(i)
@@ -120,17 +132,17 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
                                             
                                               }
       const double p1=1/q;
-      const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha;
+      const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha; //alpha da fissare
       const double p3=std::exp(p_i+p_j-p_J); 
-      const double AcRa=min(1,p1*p2*p3) #acceptance ratio 
+      const double AcRa=min(1,p1*p2*p3) //acceptance ratio 
       if(accepted_proposal(AcRa)) allocations=clSplit;
       }
   else{
-    std::vector<unsigned int> clMerge (allocations.size()); #we could initialize the vector to LAbI
-    Eigen::MatrixXd data_i();  #support vector to contain data with label I, we will dinamically construct it and use it to compute conditional_pred_lpdf
-    Eigen::MatrixXd data_j();  #same for labJ
+    std::vector<unsigned int> clMerge (allocations.size()); 
+    Eigen::MatrixXd data_i();  
+    Eigen::MatrixXd data_j(); 
     Eigen::MatrixXd data_J();
-    double p_i=0; #accumulators for log probabilities
+    double p_i=0; 
     double p_j=0;
     double p_J=0;
      
@@ -145,10 +157,10 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
             if(cl[z]==allocations[I]){
               CountLabI++;
               if (!data_i.rows()){ #first iteration
-                p_i+=prior_pred_lpdf(data.row(S[z])) #REVIEW: do this with actual function + #where are the data??
+                p_i+=prior_pred_lpdf(data.row(S[z])) 
                                  }
               else{
-                p_i+=conditional_pred_lpdf(data.row(S[z]), data_i) #I imagine we pass a vector with past data to condition
+                p_i+=conditional_pred_lpdf(data.row(S[z]), data_i) 
                   }
               data_i.conservativeResize(data_i.rows()+1,NoChange);
               data_i.row(data_i.rows()-1)=data.row(i);              
@@ -156,10 +168,10 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
             else{
               CountLabJ++;
               if (!data_j.rows()){ #first iteration
-                p_j+=prior_pred_lpdf(data.row(S[z])) #REVIEW: do this with actual function + #where are the data??
+                p_j+=prior_pred_lpdf(data.row(S[z])) 
                                  }
               else{
-                p_j+=conditional_pred_lpdf(data.row(S[z]), data_j) #I imagine we pass a vector with past data to condition
+                p_j+=conditional_pred_lpdf(data.row(S[z]), data_j) 
                   }
               data_j.conservativeResize(data_j.rows()+1,NoChange);
               data_j.row(data_j.rows()-1)=data.row(i)
@@ -186,7 +198,7 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
                                             
                                               }
       double q=1; 
-      #Fake Gibbs Sampling in order to compute the probability q
+      //Fake Gibbs Sampling in order to compute the probability q
       std::vector<unsigned int> cl_copy(cl);
       for(unsigned int k=0; k<S.size(); k++){
         double p_i=ComputeRestrGSProbabilities(cl_copy, i, j, k, cluster='i');
@@ -198,36 +210,79 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<unsigned int>& cl, const
                                              }
         
       const double p1=q;
-      const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha;
+      const double p2=factorial(CountLabI-1)*factorial(CountLabJ-1)/(S.size()+2-1)*hierarchy.alpha; //fissare alpha
       const double p3=std::exp(-p_i-p_j+p_J); 
-      const double AcRa=min(1,p1*p2*p3) #acceptance ratio 
+      const double AcRa=min(1,p1*p2*p3) //acceptance ratio 
       if(accepted_proposal(AcRa)) allocations=clMerge;
       }
     
 }
-  
-  
+
 bool SplitAndMergeAlgorithm::accepted_proposal(const double acRa) const{
     std::default_random_engine generator;
-    std::uniform_real_distribution UnifDis(0.0, 1.0);
+    std::uniform_real_distribution<> UnifDis(0.0, 1.0);
     return (UnifDis(generator)<=acRa);
                                                                         }
-  # standard Gibbs Sampling
+
+// standard Gibbs Sampling
 void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const unsigned int i, 
                    const unsigned int j) const{ 
   for(unsigned int i=0; i<S.size(); i++){
-    LabI=*(std::max_element(allocations.begin(), allocations.end())); #bisogna mettere LabI come _private
     p_i = ComputeRestrGSProbabilities(cl, i, j, z, 'i');
     p_j = ComputeRestrGSProbabilities(cl, i, j, z, 'j');
     p   = p_i/(p_i+p_j);  
     cl[i]= (accepted_proposal(p)) ? LabI : cl[i];
                                          }                                                        
                                                            }
-# Modified Gibbs Sampling
+
+void SplitAndMergeAlgorithm::full_GS(){
+  unsigned int n_data = data.rows();
+  auto &rng = bayesmix::Rng::Instance().get();
+  for(size_t i=0; i<n_data; ++i){
+    bool singleton = (unique_values[allocations[i]]->get_card()<=1);
+    unsigned int c_old = allocations[i];
+    if(singleton){
+      remove_singleton(c_old);
+    }else{
+      unique_values[c_old]->remove_datum(
+        i, data.row(i), update_hierarchy_params());
+    }
+    unsigned int n_clust = unique_values.size();
+
+    Eigen::VectorXd logprobas(unique_values.size()+1);
+    for(size_t j=0; j<n_clust; ++j){
+      logprobas(j) = mixing->get_mass_existing_cluster(
+        n_data-1, true, true, unique_values[j]);
+      logprobas(j) += unique_values[j]->conditional_pred_lpdf(
+        data.row(data_idx));
+    }
+    logprobas(n_clust) = mixing->get_mass_new_cluster(
+      n_data-1, true, true, n_clust);
+    logprobas(n_clust) += unique_values[j]->prior_pred_lpdf(
+      data.row(i));
+
+    unsigned int c_new = 
+      bayesmix::categorical_rng(stan::math::softmax(logprobas), rng, 0);
+
+    if(c_new==n_clust){
+      std::shared_ptr<AbstractHierarchy> new_unique =
+        unique_values[0]->clone();
+      new_unique->add_datum(i, data.row(i), update_hierarchy_params());
+      new_unique->sample_full_cond(!update_hierarchy_params());
+      unique_values.push_back(new_unique);
+      allocations[i] = unique_values.size() - 1;
+    }else{
+      allocations[i] = c_new;
+      unique_values[c_new]->add_datum(
+        i, data.row(i), update_hierarchy_params());
+    }
+  }
+}
+
+// Modified Gibbs Sampling
 void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const unsigned int i, 
                    const unsigned int j, double &res_prod)const{ 
   for(unsigned int i=0; i<S.size(); i++){
-    LabI=*(std::max_element(allocations.begin(), allocations.end())); #bisogna mettere LabI come _private
     p_i = ComputeRestrGSProbabilities(cl, i, j, z, 'i');
     p_j = ComputeRestrGSProbabilities(cl, i, j, z, 'j');
     p   = p_i/(p_i+p_j);  
@@ -236,8 +291,8 @@ void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const 
     else res_prod=res_prod*(1-p);
                                          }                                                        
                                                            }
-      
- double SplitAndMergeAlgorithm::ComputeRestrGSProbabilities(std::vector<unsigned int>& cl,
+
+double SplitAndMergeAlgorithm::ComputeRestrGSProbabilities(std::vector<unsigned int>& cl,
                     const unsigned int i, const unsigned int j, const unsigned int z,const char cluster='i') const{
     if(cluster!='i' and cluster!='j'){
       std::cerr<<"Unexpected value for the parameter cluster ";
@@ -268,9 +323,6 @@ void SplitAndMergeAlgorithm::restricted_GS(std::vector<unsigned int>& cl, const 
          }
    
  }
-      
-      
-      
       
       
       
