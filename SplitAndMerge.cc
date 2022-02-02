@@ -69,7 +69,7 @@ std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigne
 }
 
 // in cl (vettore di due celle) ci saranno anche i a j
-void SplitAndMergeAlgorithm::split_or_merge(std::vector<std::shared_ptr<AbstractHierarchy>>& cl, const unsigned int i, const unsigned int j){
+void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned int j){
     if(allocations[i]==allocations[j]) { 
       std::vector<unsigned int> clSplit (allocations.size()); 
       std::shared_ptr<AbstractHierarchy> data_i()= unique_values[0]->clone();
@@ -81,8 +81,7 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<std::shared_ptr<Abstract
       
       clSplit[i]=LabI;
       clSplit[j]=allocations[j];
-      double q=1.0;
-      restricted_GS(cl,i,j,q);
+      double q=std::exp(restricted_GS(i,j,true));
       unsigned int z=0;
       std::set<int> set_i=cl[0]->get_data_idx();
       std::set<int> set_j=cl[1]->get_data_idx();
@@ -201,12 +200,38 @@ void SplitAndMergeAlgorithm::split_or_merge(std::vector<std::shared_ptr<Abstract
       double q=1; 
       //Fake Gibbs Sampling in order to compute the probability q
       for(unsigned int k=0; k<S.size(); k++){
-        double p_i=cl[0]->conditional_pred_lpdf(data.row(k));
-        double p_j=
+        if(allocations_cl[k]){ //cluster j
+          cl[1]->remove_datum(S[k], data.row(S[k]), update_hierarchy_params());
+                             }
+        else{
+          cl[0]->remove_datum(S[k], data.row(S[k]), update_hierarchy_params());
+             }
+        if(cl[0]->get_card()>=1 and cl[1]->get_card()>=1){
+          double p_i=cl[0]->conditional_pred_lpdf(data.row(S[k]));
+          double p_j=cl[1]->conditional_pred_lpdf(data.row(S[k]));
+                                }
+        else{
+          if(cl[1]->get_card()==0){
+            double p_j=cl[1]->prior_pred_lpdf(data.row(S[k]));
+            double p_i=cl[0]->conditional_pred_lpdf(data.row(S[k]));
+                                   }
+          else{
+             double p_i=cl[0]->prior_pred_lpdf(data.row(S[k]));
+             double p_j=cl[1]->conditional_pred_lpdf(data.row(S[k]));
+               }  
+            }
+     
         double p=(p_i)/(p_i + p_j);
-        cl_copy[k]=allocations[S[k]];
-        if(cl_copy[k]==allocations[i]) q=q*p;
-        else q=q*(1-p);
+        if(allocations[S[k]]==allocations[i]){
+          allocations_cl[k]=0;
+          cl[0]->add_datum(S[k], data.row(S[k]), update_hierarchy_params());
+          q=q*p;
+                                             }
+        else{
+          allocations_cl[k]=1;
+          cl[1]->add_datum(S[k], data.row(S[k]), update_hierarchy_params());
+          q=q*(1-p);
+            }
                                              }
         
       const double p1=q;
