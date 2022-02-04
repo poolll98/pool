@@ -57,6 +57,12 @@ class SplitAndMergeAlgorithm : public MarginalAlgorithm {
   // inside the function.
   void split_or_merge(std::vector<unsigned int>& cl, const unsigned int i,
   	const unsigned int j);
+  
+  unsigned int factorial(const unsigned int n) const{
+    if (n<=1) return 1;
+    else return n*factorial(n-1)
+  }
+ 
 
   // This function was __MH in Python
   bool accepted_proposal(const double acRa) const;
