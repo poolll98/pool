@@ -59,10 +59,10 @@ std::vector<unsigned int> SplitAndMergeAlgorithm::compute_C_launch(const unsigne
         LabI=allocations[i];
     }
     std::vector<unsigned int>cl(S.size(),LabI);
-    std::default_random_engine generator;
+    //std::default_random_engine generator; //old generator
     std::bernoulli_distribution bdistr(0.5);
     for (int k = 0; k < S.size(); ++k) {
-        if (bdistr(generator))
+        if (bdistr(bayesmix::Rng::Instance().get()))
             cl[k]=allocations[j];
     }
     return cl;
@@ -135,8 +135,19 @@ void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned
       const double p2=factorial(data_j->get_card()-1-1)*factorial(data_i->get_card()-1-1)/(S.size()+2-1)*hierarchy.alpha; //alpha da fissare
       const double p3=std::exp(p_i+p_j-p_J); 
       const double AcRa=std::min(1,p1*p2*p3) //acceptance ratio 
-      if(accepted_proposal(AcRa)) allocations=clSplit;
+      if(accepted_proposal(AcRa)){ //allocations=clSplit
+        unique_values.push_back(unique_values[0]->clone()); //add new cluster, was this already done?
+        for(unsigned int k=0; k<clSplit.size(); k++){
+          if(allocations[k]!=clSplit[k]){
+            if(unique_values[allocations[k]]->get_card()<=1) remove_singleton(c_old); //just to be sure
+            else unique_values[allocations[k]]->remove_datum(k, data.row(k), update_hierarchy_params());
+            
+            unique_values[clSplit[k]]->add_datum(k, data.row(k), update_hierarchy_params());
+            allocations[k]=clSplit[k];
+          }
+        }
       }
+    }
   else{
     std::vector<unsigned int> clMerge (allocations.size()); 
     std::shared_ptr<AbstractHierarchy> data_i()= unique_values[0]->clone();
@@ -239,15 +250,27 @@ void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned
       const double p2=factorial(data_i->get_card()-1-1)*factorial(data_j->get_card()-1-1)/(S.size()+2-1)*hierarchy.alpha; //fissare alpha
       const double p3=std::exp(-p_i-p_j+p_J); 
       const double AcRa=std::min(1,p1*p2*p3) //acceptance ratio 
-      if(accepted_proposal(AcRa)) allocations=clMerge;
+      if(accepted_proposal(AcRa)){
+        for(unsigned int k=0; k<allocations.size(),k++){
+          if(allocations[k]==LabI){
+            
+            if(unique_values[LabI]->get_card()<=1) remove_singleton(LabI);
+            else unique_values[LAbI]->remove_datum(k,data.row(k),update_hierarchy_params());  //REVIEW: we don't have to update params since we are only interested
+                                                                                                       //in deleting cluster LabI right?
+            unique_values[allocations[j]]->add_datum(k,data.row(k),update_hierarchy_params()); // here we can do it only at the last iteration maybe?
+            allocations[k]=allocations[j];
+          }
+        }
       }
+    } //close for
     
 }
 
 bool SplitAndMergeAlgorithm::accepted_proposal(const double acRa) const{
-    std::default_random_engine generator;
+    // std::default_random_engine generator; //old generator
+    
     std::uniform_real_distribution<> UnifDis(0.0, 1.0);
-    return (UnifDis(generator)<=acRa);
+    return (UnifDis(bayesmix::Rng::Instance().get())<=acRa);
                                                                         }
 
 // standard Gibbs Sampling
