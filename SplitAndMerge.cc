@@ -378,7 +378,7 @@ double SplitAndMergeAlgorithm::ComputeRestrGSProbabilities(std::vector<unsigned 
       ExtractedData=data(v,Eigen::all);
       if(ExtractedData.rows()==0){
         std::cerr<<"No data points in one of the two clusters considered for restricted Gibbs sampling."+
-                    "This is impossible, indeed there should always be at "+"least i or j in the datapoints.+
+                    "This is impossible, indeed there should always be at "+"least i or j in the datapoints."+
                     "least i or j in the datapoints."<<std::endl;
         return 0.0;
                                     }
