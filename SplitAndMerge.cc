@@ -131,8 +131,8 @@ void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned
                                             
                                               }
       const double p1=1/q;
-       // data_i->get_card()-1 = n. di dati con LabelI senza i, data_j->get_card()-1= n. di dati con label j senza j
-      const double p2=factorial(data_j->get_card()-1-1)*factorial(data_i->get_card()-1-1)/(S.size()+2-1)*hierarchy.alpha; //alpha da fissare
+       // data_i->get_card()-1 = n. di dati con LabelI senza i, data_j->get_card()-1= n. di dati con label j senza j (+1 finale perchè usiama la funzione gamma
+      const double p2=tgamma(data_j->get_card()-1-1+1)*tgamma(data_i->get_card()-1-1+1)/(S.size()+2-1)*hierarchy.alpha; //alpha da fissare
       const double p3=std::exp(p_i+p_j-p_J); 
       const double AcRa=std::min(1,p1*p2*p3) //acceptance ratio 
       if(accepted_proposal(AcRa)){ //allocations=clSplit
@@ -247,7 +247,7 @@ void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned
         
       const double p1=q;
        // data_i->get_card()-1 = n. di dati con LabelI senza i, data_j->get_card()-1= n. di dati con label j senza j
-      const double p2=factorial(data_i->get_card()-1-1)*factorial(data_j->get_card()-1-1)/(S.size()+2-1)*hierarchy.alpha; //fissare alpha
+      const double p2=tgamma(data_i->get_card()-1-1+1)*tgamma(data_j->get_card()-1-1+1)/(S.size()+2-1)*hierarchy.alpha; //fissare alpha
       const double p3=std::exp(-p_i-p_j+p_J); 
       const double AcRa=std::min(1,p1*p2*p3) //acceptance ratio 
       if(accepted_proposal(AcRa)){
