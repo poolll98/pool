@@ -131,12 +131,12 @@ void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned
                                             
                                               }
       const double p1=1/q;
-       // data_i->get_card()-1 = n. di dati con LabelI senza i, data_j->get_card()-1= n. di dati con label j senza j (+1 finale perchè usiama la funzione gamma
+       // data_i->get_card()-1 = n. di dati con LabelI senza i, data_j->get_card()-1= n. di dati con label j senza j (+1 finale perchè usiamo la funzione gamma)
       const double p2=tgamma(data_j->get_card()-1-1+1)*tgamma(data_i->get_card()-1-1+1)/(S.size()+2-1)*hierarchy.alpha; //alpha da fissare
       const double p3=std::exp(p_i+p_j-p_J); 
       const double AcRa=std::min(1,p1*p2*p3) //acceptance ratio 
-      if(accepted_proposal(AcRa)){ //allocations=clSplit
-        unique_values.push_back(unique_values[0]->clone()); //add new cluster, was this already done?
+      if(accepted_proposal(AcRa)){
+        unique_values.push_back(unique_values[0]->clone());
         for(unsigned int k=0; k<clSplit.size(); k++){
           
           if(allocations[k]!=clSplit[k]){ //it should happen only when we pass data from labj to labi
@@ -271,7 +271,7 @@ void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned
             }
             else unique_values[LAbI]->remove_datum(k,data.row(k),update_hierarchy_params());  //REVIEW: we don't have to update params since we are only interested
                                                                                                        //in deleting cluster LabI right?
-            unique_values[allocations[j]]->add_datum(k,data.row(k),update_hierarchy_params()); // here we can do it only at the last iteration maybe?
+            unique_values[allocations[j]]->add_datum(k,data.row(k),update_hierarchy_params()); // here we can update only at the last iteration maybe?
             allocations[k]=allocations[j];
           }
         }
