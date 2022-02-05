@@ -138,12 +138,21 @@ void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned
       if(accepted_proposal(AcRa)){ //allocations=clSplit
         unique_values.push_back(unique_values[0]->clone()); //add new cluster, was this already done?
         for(unsigned int k=0; k<clSplit.size(); k++){
-          if(allocations[k]!=clSplit[k]){
-            if(unique_values[allocations[k]]->get_card()<=1) remove_singleton(c_old); //just to be sure
-            else unique_values[allocations[k]]->remove_datum(k, data.row(k), update_hierarchy_params());
+          
+          if(allocations[k]!=clSplit[k]){ //it should happen only when we pass data from labj to labi
+            if(unique_values[allocations[k]]->get_card()<=1){ //just to be sure, if all data end up in labi
+              remove_singleton(allocations[k]);
+              unique_values[clSplit[k]-1]->add_datum(k, data.row(k), update_hierarchy_params()); //new label is always shifted back since it's the new one
+              allocations[k]=clSplit[k]-1;
+              break;  //no more data cluster to update
+            }
             
-            unique_values[clSplit[k]]->add_datum(k, data.row(k), update_hierarchy_params());
-            allocations[k]=clSplit[k];
+            else{
+              unique_values[allocations[k]]->remove_datum(k, data.row(k), update_hierarchy_params());
+              unique_values[clSplit[k]]->add_datum(k, data.row(k), update_hierarchy_params());
+              allocations[k]=clSplit[k];
+            }
+            
           }
         }
       }
@@ -254,7 +263,12 @@ void SplitAndMergeAlgorithm::split_or_merge(const unsigned int i, const unsigned
         for(unsigned int k=0; k<allocations.size(),k++){
           if(allocations[k]==LabI){
             
-            if(unique_values[LabI]->get_card()<=1) remove_singleton(LabI);
+            if(unique_values[LabI]->get_card()<=1){
+              remove_singleton(LabI);
+              unique_values[allocations[j]]->add_datum(k,data.row(k),update_hierarchy_params()); // allocations is already updated, also for j
+              allocations[k]=allocations[j];
+              break;
+            }
             else unique_values[LAbI]->remove_datum(k,data.row(k),update_hierarchy_params());  //REVIEW: we don't have to update params since we are only interested
                                                                                                        //in deleting cluster LabI right?
             unique_values[allocations[j]]->add_datum(k,data.row(k),update_hierarchy_params()); // here we can do it only at the last iteration maybe?
